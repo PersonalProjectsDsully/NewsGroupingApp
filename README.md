@@ -43,6 +43,7 @@ The system consists of:
 ### Required API Keys
 - OpenAI API key
 - Note with the sources I used, in April this used ~280 million tokens.
+
 ![image](https://github.com/user-attachments/assets/0ab15c5e-41b3-424b-9343-78714be08b8b)
 
 ## Installation

@@ -216,6 +216,50 @@ The system performs three main analysis phases:
 - `article_cves` - CVE mentions in articles
 - `cve_info` - Detailed CVE information
 
+## AI Models & Assistants
+
+### Claude 3.7 (Anthropic)
+- **Primary Use**: Frontend development and system architecture visualization
+- **Key Contributions**:
+  - Developed the entire frontend interface
+  - Created Mermaid diagrams for data flow and system architecture
+  - Designed the category-based navigation system
+  - Implemented responsive CSS with dark mode support
+
+### OpenAI o1-pro
+- **Primary Use**: Core algorithm development and architecture design
+- **Note**: Heavily used throughout the project for complex problem-solving
+
+### OpenAI GPT-4o
+- **Primary Use**: Code generation and implementation
+
+### OpenAI o3-mini (High)
+- **Primary Use**: Production runtime decisions
+- **Key Contributions**:
+  - Powers the production article grouping decisions
+  - Handles ambiguous case resolution
+  - Generates group labels and descriptions
+  - Performs entity extraction in production
+  - Makes real-time clustering decisions
+
+### Google Gemini Models (via AI Studio)
+- **Primary Use**: Testing with long context windows
+- **Note**: Utilized for processing large code updates and modifications
+
+## Development Tools
+
+### Repomix (VS Code Extension)
+- **Purpose**: Code organization and export
+- **Key Features**:
+  - Exports entire codebase to a single file
+  - Preserves directory structure
+  - Facilitates sharing complete context with AI assistants
+  - Automatically excludes unnecessary files
+- **Why It Was Essential**:
+  - Enabled comprehensive code reviews with AI
+  - Allowed full project context sharing
+  - Simplified cross-file refactoring discussions
+
 ## Troubleshooting
 
 ### Common Issues

@@ -1,0 +1,23 @@
+<!-- frontend/public/index.html -->
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>Security News Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      /* Ensure a smooth transition when loading the page */
+      body {
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      /* Apply dark styles immediately before React loads */
+      html.dark body {
+        background-color: #111827; /* bg-gray-900 */
+        color: #f3f4f6; /* text-gray-100 */
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 dark:bg-gray-900">
+    <div id="root"></div>
+  </body>
+</html>

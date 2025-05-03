@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    container_name: security_news_dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./db:/app/db
+    environment:
+      - OPENAI_API_KEY=  # Pass from host environment variable
+    restart: unless-stopped
+
+# To run with your API key, use:
+# OPENAI_API_KEY=your_api_key_here docker-compose up
+# Or create a .env file with OPENAI_API_KEY=your_api_key_here

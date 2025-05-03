@@ -48,7 +48,7 @@ The system consists of:
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone https://github.com/PersonalProjectsDsully/NewsGroupingApp.git
 cd news_app
 ```
 

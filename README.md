@@ -4,6 +4,7 @@ A real-time news aggregation and clustering system that automatically groups rel
 
 [My Hosted Demo](https://dsecuritynews.com/)
 
+
 ## Table of Contents
 - [Overview](#overview)
 - [Architecture](#architecture)
@@ -41,6 +42,8 @@ The system consists of:
 
 ### Required API Keys
 - OpenAI API key
+- Note with the sources I used, in April this used ~280 million tokens.
+![image](https://github.com/user-attachments/assets/0ab15c5e-41b3-424b-9343-78714be08b8b)
 
 ## Installation
 
@@ -249,7 +252,8 @@ docker-compose logs -f
 - Mitre API doesn't always have information on CVEs, NIST Could be used as a backup, though this is not implemented in prod.
 - Date Filtering is not perfect when converting dates to EST. 
 - Converting dates to standard format works the majority of the time, if multiple dates are scraped from the fields, it will not work properly.
-- When article links are updated, it does not detect that it is a duplicate article. 
+- When article links are updated, it does not detect that it is a duplicate article.
+- Companies will ban you from scraping there websites, just take note of this.
 
 ## Contributing
 

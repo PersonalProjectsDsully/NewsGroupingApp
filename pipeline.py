@@ -1,4 +1,3 @@
-
 import os
 import logging
 import time
@@ -6,11 +5,19 @@ from datetime import datetime, timedelta
 
 # --- Core Analysis Modules ---
 from analysis.entity_extraction import extract_entities_for_all_articles
-from analysis.company_extraction import extract_company_names_for_all_articles # Kept for now
-from analysis.cve_extraction import process_cves_in_articles, update_cve_details_from_api
+from analysis.company_extraction import (
+    extract_company_names_for_all_articles,
+)  # Kept for now
+from analysis.cve_extraction import (
+    process_cves_in_articles,
+    update_cve_details_from_api,
+)
 
 # --- Import the NEW grouping function and its default rules ---
-from analysis.two_phase_grouping import run_grouping_update, DYNAMIC_THRESHOLD_RULES # <<< IMPORT RULES
+from analysis.two_phase_grouping import (
+    run_grouping_update,
+    DYNAMIC_THRESHOLD_RULES,
+)  # <<< IMPORT RULES
 
 # --- Trending Analysis ---
 from analysis.trending_analysis import run_trending_analysis, cleanup_old_trends
@@ -18,10 +25,13 @@ from analysis.trending_analysis import run_trending_analysis, cleanup_old_trends
 # --- Optional Group Merging ---
 try:
     from analysis.group_merging import merge_similar_groups
+
     GROUP_MERGING_ENABLED = True
-    DEFAULT_MERGE_THRESHOLD = 0.60 # Configurable merge threshold
+    DEFAULT_MERGE_THRESHOLD = 0.60  # Configurable merge threshold
 except ImportError:
-    logger.warning("Group merging module ('analysis/group_merging.py') not found. Skipping merge step.")
+    logger.warning(
+        "Group merging module ('analysis/group_merging.py') not found. Skipping merge step."
+    )
     GROUP_MERGING_ENABLED = False
 
 logger = logging.getLogger(__name__)
@@ -33,7 +43,7 @@ def run_entity_extraction_pipeline(api_key=None, db_path="db/news.db"):
     These need to run BEFORE similarity-based grouping.
     """
     if api_key is None:
-        api_key = os.getenv('OPENAI_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.error("No API key found for entity extraction.")
         return ["Error: No API key for entity extraction"]
@@ -77,18 +87,19 @@ def run_entity_extraction_pipeline(api_key=None, db_path="db/news.db"):
     logger.info(f"Entity/CVE Extraction Pipeline finished in {elapsed:.2f}s")
     return logs
 
+
 # <<< MODIFIED Function Signature and Call >>>
 def run_article_grouping_pipeline(
     api_key=None,
     db_path="db/news.db",
-    threshold_rules=DYNAMIC_THRESHOLD_RULES # <<< Use rules dict, import default
+    threshold_rules=DYNAMIC_THRESHOLD_RULES,  # <<< Use rules dict, import default
 ):
     """
     Run the article grouping pipeline using the NEW similarity-based approach
     with dynamic thresholds and optional LLM checks.
     """
     if api_key is None:
-        api_key = os.getenv('OPENAI_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.error("No API key found. Cannot create new groups.")
         return ["Error: No API key for article grouping"]
@@ -103,9 +114,9 @@ def run_article_grouping_pipeline(
         logger.info(f"Running grouping update with dynamic threshold rules...")
         logs.append(f"Running grouping update with dynamic threshold rules...")
         run_grouping_update(
-            threshold_rules=threshold_rules, # <<< Pass the rules dict
+            threshold_rules=threshold_rules,  # <<< Pass the rules dict
             api_key=api_key,
-            db_path=db_path
+            db_path=db_path,
             # batch_delay can be added here if needed, defaults defined in run_grouping_update
         )
         logs.append("Grouping update process completed.")
@@ -118,6 +129,8 @@ def run_article_grouping_pipeline(
     logs.append(f"PHASE 2 Finished in {elapsed:.2f} seconds.")
     logger.info(f"Similarity-Based Grouping Pipeline finished in {elapsed:.2f}s")
     return logs
+
+
 # <<< END MODIFIED Function >>>
 
 
@@ -126,7 +139,7 @@ def run_trending_analysis_pipeline(api_key=None, db_path="db/news.db"):
     Run the 48-hour trending analysis pipeline.
     """
     if api_key is None:
-        api_key = os.getenv('OPENAI_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.error("No API key provided for trending analysis.")
         return ["Error: No API key for trending analysis"]
@@ -146,8 +159,13 @@ def run_trending_analysis_pipeline(api_key=None, db_path="db/news.db"):
         # Run the trending analysis
         logger.info("Running 48-hour trending analysis...")
         logs.append("Running 48-hour trending analysis...")
-        from analysis.two_phase_grouping import PREDEFINED_CATEGORIES # Import here if needed
-        run_trending_analysis(api_key, categories=PREDEFINED_CATEGORIES, db_path=db_path)
+        from analysis.two_phase_grouping import (
+            PREDEFINED_CATEGORIES,
+        )  # Import here if needed
+
+        run_trending_analysis(
+            api_key, categories=PREDEFINED_CATEGORIES, db_path=db_path
+        )
         logs.append("Done running trending analysis.")
 
     except Exception as e:
@@ -169,55 +187,72 @@ def run_full_pipeline_headless(api_key=None, db_path="db/news.db"):
     logger.info("--- Running Full Analysis Pipeline ---")
 
     if api_key is None:
-        api_key = os.getenv('OPENAI_API_KEY')
+        api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.error("Critical Error: API Key not found. Aborting pipeline.")
         return ["Critical Error: No API key found. Pipeline aborted."]
 
-    all_logs = ["Pipeline Started at " + datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+    all_logs = ["Pipeline Started at " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
 
     # PHASE 1: Entity/CVE Extraction
     entity_logs = run_entity_extraction_pipeline(api_key, db_path)
     all_logs.extend(entity_logs)
     if any("Error:" in log for log in entity_logs):
-         logger.error("Stopping pipeline due to errors in Entity/CVE Extraction.")
-         all_logs.append("Pipeline stopped due to errors in Phase 1.")
-         return all_logs
+        logger.error("Stopping pipeline due to errors in Entity/CVE Extraction.")
+        all_logs.append("Pipeline stopped due to errors in Phase 1.")
+        return all_logs
 
     # PHASE 2: Similarity-Based Grouping
     # <<< Pass default rules or allow customization >>>
-    grouping_logs = run_article_grouping_pipeline(api_key, db_path, threshold_rules=DYNAMIC_THRESHOLD_RULES)
+    grouping_logs = run_article_grouping_pipeline(
+        api_key, db_path, threshold_rules=DYNAMIC_THRESHOLD_RULES
+    )
     all_logs.extend(grouping_logs)
     if any("Error:" in log for log in grouping_logs):
-         logger.error("Stopping pipeline due to errors in Grouping.")
-         all_logs.append("Pipeline stopped due to errors in Phase 2.")
-         return all_logs
+        logger.error("Stopping pipeline due to errors in Grouping.")
+        all_logs.append("Pipeline stopped due to errors in Phase 2.")
+        return all_logs
 
     # PHASE 2.5: Group Merging (Optional)
     if GROUP_MERGING_ENABLED:
         try:
-            logger.info(f"Starting Group Merging with threshold {DEFAULT_MERGE_THRESHOLD}...")
-            all_logs.append(f"PHASE 2.5: Group Merging Started (Threshold: {DEFAULT_MERGE_THRESHOLD})")
-            merge_stats = merge_similar_groups(DEFAULT_MERGE_THRESHOLD, api_key, db_path)
-            all_logs.append(f"Group Merging completed: {merge_stats.get('merged_pairs', 0)} pairs merged, {merge_stats.get('errors', 0)} errors.")
-            logger.info(f"Group Merging completed: {merge_stats.get('merged_pairs', 0)} pairs merged.")
+            logger.info(
+                f"Starting Group Merging with threshold {DEFAULT_MERGE_THRESHOLD}..."
+            )
+            all_logs.append(
+                f"PHASE 2.5: Group Merging Started (Threshold: {DEFAULT_MERGE_THRESHOLD})"
+            )
+            merge_stats = merge_similar_groups(
+                DEFAULT_MERGE_THRESHOLD, api_key, db_path
+            )
+            all_logs.append(
+                f"Group Merging completed: {merge_stats.get('merged_pairs', 0)} pairs merged, {merge_stats.get('errors', 0)} errors."
+            )
+            logger.info(
+                f"Group Merging completed: {merge_stats.get('merged_pairs', 0)} pairs merged."
+            )
         except Exception as merge_err:
             logger.exception("Error during Group Merging")
             all_logs.append(f"Error in Phase 2.5: {merge_err}")
     else:
         all_logs.append("PHASE 2.5: Skipped (module not found or disabled).")
 
-
     # PHASE 3: Trending Analysis
     trending_logs = run_trending_analysis_pipeline(api_key, db_path)
     all_logs.extend(trending_logs)
     if any("Error:" in log for log in trending_logs):
-         logger.warning("Errors occurred during Trending Analysis, but pipeline finished Phases 1 & 2.")
-         all_logs.append("Warnings occurred during Phase 3.")
+        logger.warning(
+            "Errors occurred during Trending Analysis, but pipeline finished Phases 1 & 2."
+        )
+        all_logs.append("Warnings occurred during Phase 3.")
 
     overall_elapsed = time.time() - overall_start_time
-    all_logs.append(f"\n--- Full Pipeline Completed in {overall_elapsed:.2f} seconds ---")
-    logger.info(f"--- Full Analysis Pipeline Completed in {overall_elapsed:.2f} seconds ---")
+    all_logs.append(
+        f"\n--- Full Pipeline Completed in {overall_elapsed:.2f} seconds ---"
+    )
+    logger.info(
+        f"--- Full Analysis Pipeline Completed in {overall_elapsed:.2f} seconds ---"
+    )
 
     return all_logs
 

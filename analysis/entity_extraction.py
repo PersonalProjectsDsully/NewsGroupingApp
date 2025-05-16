@@ -7,11 +7,7 @@ import time
 import pandas as pd
 import logging
 
-from db.database import (
-    get_connection, 
-    insert_entity, 
-    link_entity_to_article
-)
+from db.database import get_connection, insert_entity, link_entity_to_article
 from llm_calls import call_gpt_api
 from utils import chunk_summaries, MAX_TOKEN_CHUNK
 
@@ -20,6 +16,7 @@ MODEL = "o3-mini"  # or whichever model you prefer
 
 # Increase the token chunk size for faster processing
 EXTRACTION_TOKEN_CHUNK = MAX_TOKEN_CHUNK * 1.5  # 50% larger chunks for extraction
+
 
 def get_articles_missing_entity_extraction(db_path="db/news.db"):
     """
@@ -41,6 +38,7 @@ def get_articles_missing_entity_extraction(db_path="db/news.db"):
     conn.close()
     return df
 
+
 def extract_entities_from_batch(article_batch, api_key, model=MODEL):
     """
     Extract entities from a batch of articles using the LLM.
@@ -53,45 +51,42 @@ def extract_entities_from_batch(article_batch, api_key, model=MODEL):
         "Include people, organizations, technologies, products, places, and key concepts. "
         "For each entity, determine its type and provide a brief description.\n\n"
         "Return only JSON with the format:\n"
-        "{ \"articles\": [ "
-            "{ \"article_id\": \"...\", \"entities\": ["
-                "{ \"name\": \"Entity Name\", \"type\": \"person|organization|technology|product|place|concept\", "
-                "\"description\": \"Brief description\", \"relevance\": 0.1-1.0, \"context\": \"snippet where entity appears\" },"
-                "..."
-            "] },"
-            "..."
+        '{ "articles": [ '
+        '{ "article_id": "...", "entities": ['
+        '{ "name": "Entity Name", "type": "person|organization|technology|product|place|concept", '
+        '"description": "Brief description", "relevance": 0.1-1.0, "context": "snippet where entity appears" },'
+        "..."
+        "] },"
+        "..."
         "] }\n\n"
     )
-    
+
     # Add each article to the prompt
     for art_id, text in article_batch.items():
         # Limit text length for each article
         prompt += f"Article ID={art_id}:\n{text[:3000]}...\n\n"
-    
+
     messages = [
         {
             "role": "system",
-            "content": "Extract named entities from multiple articles in batch mode."
+            "content": "Extract named entities from multiple articles in batch mode.",
         },
-        {
-            "role": "user",
-            "content": prompt
-        }
+        {"role": "user", "content": prompt},
     ]
-    
+
     resp = call_gpt_api(messages, api_key, model=model)
     if not resp:
         logger.warning("No response from GPT for batch entity extraction.")
         return {}
-    
+
     # Clean and parse the response
     cleaned = resp.strip().strip("```json").strip("```").strip()
-    cleaned = re.sub(r'^json\s+', '', cleaned, flags=re.IGNORECASE)
-    
+    cleaned = re.sub(r"^json\s+", "", cleaned, flags=re.IGNORECASE)
+
     try:
         data = json.loads(cleaned)
         articles_data = data.get("articles", [])
-        
+
         # Organize results by article_id
         results = {}
         for article in articles_data:
@@ -99,11 +94,12 @@ def extract_entities_from_batch(article_batch, api_key, model=MODEL):
             entities = article.get("entities", [])
             if art_id and entities:
                 results[art_id] = entities
-        
+
         return results
     except json.JSONDecodeError as e:
         logger.error(f"Error parsing batch entity extraction JSON: {e}\n{cleaned}")
         return {}
+
 
 def extract_entities_for_all_articles(api_key, db_path="db/news.db"):
     """
@@ -125,12 +121,16 @@ def extract_entities_for_all_articles(api_key, db_path="db/news.db"):
             summaries_dict[art_id] = content
 
     # Split into chunks for batch processing
-    chunked_articles = list(chunk_summaries(summaries_dict, max_token_chunk=EXTRACTION_TOKEN_CHUNK))
+    chunked_articles = list(
+        chunk_summaries(summaries_dict, max_token_chunk=EXTRACTION_TOKEN_CHUNK)
+    )
     total_articles = len(summaries_dict)
     processed_articles = 0
     total_extractions = 0
 
-    logger.info(f"Starting entity extraction for {total_articles} articles in {len(chunked_articles)} batches")
+    logger.info(
+        f"Starting entity extraction for {total_articles} articles in {len(chunked_articles)} batches"
+    )
 
     for idx, chunk_dict in enumerate(chunked_articles, start=1):
         chunk_size = len(chunk_dict)
@@ -141,7 +141,7 @@ def extract_entities_for_all_articles(api_key, db_path="db/news.db"):
 
         # Process the whole chunk at once
         batch_results = extract_entities_from_batch(chunk_dict, api_key)
-        
+
         # Store the extracted entities
         for art_id, entities in batch_results.items():
             try:
@@ -150,33 +150,33 @@ def extract_entities_for_all_articles(api_key, db_path="db/news.db"):
                     entity_name = entity.get("name", "").strip()
                     if not entity_name:
                         continue
-                        
+
                     entity_type = entity.get("type", "unknown").lower()
                     description = entity.get("description", "")
                     relevance = float(entity.get("relevance", 1.0))
                     context = entity.get("context", "")
-                    
+
                     # Insert or update the entity profile
                     entity_id = insert_entity(
                         entity_name=entity_name,
                         entity_type=entity_type,
                         description=description,
-                        db_path=db_path
+                        db_path=db_path,
                     )
-                    
+
                     # Link entity to the article
                     link_entity_to_article(
                         article_id=art_id,
                         entity_id=entity_id,
                         relevance_score=relevance,
                         context_snippet=context,
-                        db_path=db_path
+                        db_path=db_path,
                     )
-                    
+
                     total_extractions += 1
             except Exception as e:
                 logger.error(f"Error processing entities for article {art_id}: {e}")
-        
+
         # Update processed count and report progress
         processed_articles += len(batch_results)
         logger.info(
@@ -184,7 +184,7 @@ def extract_entities_for_all_articles(api_key, db_path="db/news.db"):
             f"Processed {processed_articles}/{total_articles} articles ({processed_articles/total_articles*100:.1f}%). "
             f"Extracted {total_extractions} entities so far."
         )
-        
+
         # Small delay between batches to avoid rate limiting
         time.sleep(0.5)
 
@@ -192,6 +192,7 @@ def extract_entities_for_all_articles(api_key, db_path="db/news.db"):
         f"Finished entity extraction. Processed {processed_articles}/{total_articles} articles. "
         f"Extracted {total_extractions} entity-article relationships."
     )
+
 
 def get_entities_for_article(article_id, db_path="db/news.db"):
     """
@@ -215,6 +216,7 @@ def get_entities_for_article(article_id, db_path="db/news.db"):
     df = pd.read_sql_query(query, conn, params=(article_id,))
     conn.close()
     return df
+
 
 def get_entities_for_category(category, limit=20, db_path="db/news.db"):
     """
@@ -243,6 +245,7 @@ def get_entities_for_category(category, limit=20, db_path="db/news.db"):
     conn.close()
     return df
 
+
 def get_related_entities(entity_id, limit=10, db_path="db/news.db"):
     """
     Get entities that frequently co-occur with the specified entity.
@@ -268,6 +271,7 @@ def get_related_entities(entity_id, limit=10, db_path="db/news.db"):
     conn.close()
     return df
 
+
 def get_trending_entities(hours=48, limit=20, db_path="db/news.db"):
     """
     Get entities that are trending in recent articles.
@@ -277,7 +281,8 @@ def get_trending_entities(hours=48, limit=20, db_path="db/news.db"):
     conn = get_connection(db_path)
     # Calculate cutoff time directly for the SQL query
     # Use the format SQLite expects: YYYY-MM-DD HH:MM:SS
-    from datetime import datetime, timedelta, timezone # Add timezone import
+    from datetime import datetime, timedelta, timezone  # Add timezone import
+
     cutoff_time_utc = datetime.now(timezone.utc) - timedelta(hours=hours)
     cutoff_time_str = cutoff_time_utc.strftime("%Y-%m-%d %H:%M:%S")
 

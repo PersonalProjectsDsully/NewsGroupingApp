@@ -11,6 +11,7 @@ REQUEST_TIMEOUT = 600
 
 logger = logging.getLogger(__name__)
 
+
 def call_gpt_api(messages, api_key=None, model=MODEL):
     """
     Call OpenAI API with retry logic and basic error handling.
@@ -19,7 +20,9 @@ def call_gpt_api(messages, api_key=None, model=MODEL):
     if api_key is None:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            logger.error("No API key provided. Please set OPENAI_API_KEY environment variable.")
+            logger.error(
+                "No API key provided. Please set OPENAI_API_KEY environment variable."
+            )
             return None
 
     # Estimate tokens (very rough)
@@ -33,15 +36,17 @@ def call_gpt_api(messages, api_key=None, model=MODEL):
     client = OpenAI(api_key=api_key)
     for attempt in range(MAX_RETRIES):
         try:
-            logger.info(f"Making API call (attempt {attempt+1}/{MAX_RETRIES}) to {model}...")
+            logger.info(
+                f"Making API call (attempt {attempt+1}/{MAX_RETRIES}) to {model}..."
+            )
             start_time = time.time()
             response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                timeout=REQUEST_TIMEOUT
+                model=model, messages=messages, timeout=REQUEST_TIMEOUT
             )
             elapsed_time = time.time() - start_time
-            logger.info(f"API call successful in {elapsed_time:.2f}s with model='{model}'")
+            logger.info(
+                f"API call successful in {elapsed_time:.2f}s with model='{model}'"
+            )
             return response.choices[0].message.content.strip()
 
         except Exception as e:

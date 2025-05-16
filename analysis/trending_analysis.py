@@ -5,7 +5,7 @@ import logging
 import json
 import re
 import time
-import sqlite3 # Import sqlite3
+import sqlite3  # Import sqlite3
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -15,10 +15,11 @@ import pytz
 from db.database import (
     get_connection,
     link_entity_to_trend,
-    insert_entity # Make sure this accepts optional cursor
+    insert_entity,  # Make sure this accepts optional cursor
 )
 from llm_calls import call_gpt_api
 from utils import chunk_summaries, MAX_TOKEN_CHUNK
+
 # Import entity/context functions (these primarily read, should be okay)
 from analysis.entity_extraction import get_entities_for_article, get_trending_entities
 from analysis.context_builder import build_grouping_context, format_context_for_prompt
@@ -37,7 +38,8 @@ def setup_trending_tables(db_path="db/news.db"):
         conn = get_connection(db_path)
         cursor = conn.cursor()
         # trending_groups table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS trending_groups (
                 trend_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 category TEXT NOT NULL,
@@ -48,9 +50,11 @@ def setup_trending_tables(db_path="db/news.db"):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
         # trending_group_memberships table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS trending_group_memberships (
                 article_id INTEGER NOT NULL,
                 trend_id INTEGER NOT NULL,
@@ -59,9 +63,11 @@ def setup_trending_tables(db_path="db/news.db"):
                 FOREIGN KEY (trend_id) REFERENCES trending_groups (trend_id) ON DELETE CASCADE, /* Add ON DELETE CASCADE */
                 PRIMARY KEY (article_id, trend_id)
             )
-        """)
+        """
+        )
         # trend_entities table (ensure it exists and has ON DELETE CASCADE)
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS trend_entities (
                 trend_id INTEGER NOT NULL,
                 entity_id INTEGER NOT NULL,
@@ -70,14 +76,17 @@ def setup_trending_tables(db_path="db/news.db"):
                 FOREIGN KEY (entity_id) REFERENCES entity_profiles (entity_id) ON DELETE CASCADE, /* Add ON DELETE CASCADE */
                 PRIMARY KEY (trend_id, entity_id)
             )
-        """)
+        """
+        )
         conn.commit()
         logger.info("Trending tables verified/created.")
     except sqlite3.Error as e:
         logger.error(f"Error setting up trending tables: {e}")
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
 
 
 def get_articles_by_category_last_48h(category, db_path="db/news.db"):
@@ -105,7 +114,7 @@ def get_articles_by_category_last_48h(category, db_path="db/news.db"):
         df = pd.read_sql_query(query, conn, params=(category, cutoff_iso))
     except Exception as e:
         logger.error(f"Error fetching articles for category '{category}': {e}")
-        df = pd.DataFrame() # Return empty DataFrame on error
+        df = pd.DataFrame()  # Return empty DataFrame on error
     finally:
         conn.close()
     return df
@@ -144,7 +153,7 @@ def get_entity_co_occurrences(category, hours=48, limit=20, db_path="db/news.db"
         df = pd.read_sql_query(query, conn, params=(category, cutoff_iso, limit))
     except Exception as e:
         logger.error(f"Error fetching entity co-occurrences for '{category}': {e}")
-        df = pd.DataFrame() # Return empty DataFrame on error
+        df = pd.DataFrame()  # Return empty DataFrame on error
     finally:
         conn.close()
     return df
@@ -156,7 +165,9 @@ def _prepare_trending_entity_context(trending_entities_df, max_items=10):
         return "RECENT TRENDING ENTITIES:\n(No trending entities found)\n"
     lines = ["RECENT TRENDING ENTITIES:"]
     for _, entity in trending_entities_df.head(max_items).iterrows():
-        lines.append(f"- {entity['entity_name']} ({entity['entity_type']}): Mentioned in {entity['recent_mentions']} recent articles")
+        lines.append(
+            f"- {entity['entity_name']} ({entity['entity_type']}): Mentioned in {entity['recent_mentions']} recent articles"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -166,7 +177,9 @@ def _prepare_co_occurrence_context(co_occurrences_df, max_items=8):
         return "\nENTITY CO-OCCURRENCES:\n(No co-occurrences found)\n"
     lines = ["\nENTITY CO-OCCURRENCES:"]
     for _, pair in co_occurrences_df.head(max_items).iterrows():
-        lines.append(f"- {pair['entity1_name']} & {pair['entity2_name']}: Appear together in {pair['co_occurrence_count']} articles")
+        lines.append(
+            f"- {pair['entity1_name']} & {pair['entity2_name']}: Appear together in {pair['co_occurrence_count']} articles"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -178,22 +191,31 @@ def _prepare_article_text(df, chunk_dict, db_path):
         entities_df = get_entities_for_article(art_id, db_path=db_path)
         entity_summary = ""
         if not entities_df.empty:
-            top_entities = entities_df.sort_values('relevance_score', ascending=False).head(5)
-            entity_summary = ", ".join(f"{row['entity_name']} ({row['entity_type']})" for _, row in top_entities.iterrows())
+            top_entities = entities_df.sort_values(
+                "relevance_score", ascending=False
+            ).head(5)
+            entity_summary = ", ".join(
+                f"{row['entity_name']} ({row['entity_type']})"
+                for _, row in top_entities.iterrows()
+            )
         entity_text = f"\nKey entities: {entity_summary}" if entity_summary else ""
 
         date_str = ""
         try:
-            date_row = df[df['article_id'] == art_id]['published_date'].iloc[0]
-            if date_row: date_str = f"\nPublished: {pd.to_datetime(date_row).strftime('%Y-%m-%d %H:%M')}"
-        except: pass
+            date_row = df[df["article_id"] == art_id]["published_date"].iloc[0]
+            if date_row:
+                date_str = f"\nPublished: {pd.to_datetime(date_row).strftime('%Y-%m-%d %H:%M')}"
+        except:
+            pass
 
         snippet = text[:3000] + "..." if len(text) > 3000 else text
         article_text += f"Article ID={art_id}:{date_str}{entity_text}\n{snippet}\n\n"
     return article_text
 
 
-def _build_trend_analysis_prompt(category, context_prompt, entity_context, co_occurrence_context, article_text):
+def _build_trend_analysis_prompt(
+    category, context_prompt, entity_context, co_occurrence_context, article_text
+):
     """Construct the complete LLM user prompt for identifying trends."""
     return (
         f"Analyze these articles from the '{category}' category published in the last 48 hours. Identify significant trends or emerging stories. Group articles covering the same subject.\n\n"
@@ -201,7 +223,7 @@ def _build_trend_analysis_prompt(category, context_prompt, entity_context, co_oc
         f"\n{entity_context}\n{co_occurrence_context}\n"
         "For each trend, provide:\n"
         "1. trend_label: A short, descriptive name\n2. summary: A 2-3 sentence summary\n3. importance_score: 1-10\n"
-        "4. confidence_score: 0.1-1.0\n5. key_entities: Array of important entities [{\"name\": \"...\", \"type\": \"...\"}]\n6. articles: Array of article IDs\n\n"
+        '4. confidence_score: 0.1-1.0\n5. key_entities: Array of important entities [{"name": "...", "type": "..."}]\n6. articles: Array of article IDs\n\n'
         "Return valid JSON only:\n"
         '{ "trends": [ {"trend_label": "...", "summary": "...", "importance_score": X, "confidence_score": Y, "key_entities": [{"name": "...", "type": "..."}], "articles": [...]} ] }\n\n'
         f"Articles to analyze:\n\n{article_text}"
@@ -216,18 +238,28 @@ def identify_trends_in_category(category, api_key, db_path="db/news.db"):
         logger.info(f"No recent articles found for category: {category}")
         return None
 
-    summaries_dict = {row["article_id"]: row["expanded_summary"] for _, row in df.iterrows() if row["expanded_summary"]}
+    summaries_dict = {
+        row["article_id"]: row["expanded_summary"]
+        for _, row in df.iterrows()
+        if row["expanded_summary"]
+    }
     if not summaries_dict:
         logger.info(f"No valid summaries for trend analysis in category: {category}")
         return None
 
     trending_entities = get_trending_entities(hours=48, limit=15, db_path=db_path)
-    co_occurrences = get_entity_co_occurrences(category, hours=48, limit=15, db_path=db_path)
+    co_occurrences = get_entity_co_occurrences(
+        category, hours=48, limit=15, db_path=db_path
+    )
     result = {"trends": []}
-    chunked_data = list(chunk_summaries(summaries_dict, max_token_chunk=MAX_TOKEN_CHUNK)) # Ensure list conversion
+    chunked_data = list(
+        chunk_summaries(summaries_dict, max_token_chunk=MAX_TOKEN_CHUNK)
+    )  # Ensure list conversion
 
     for idx, chunk_dict in enumerate(chunked_data, start=1):
-        logger.info(f"Processing chunk {idx}/{len(chunked_data)} for category: {category}")
+        logger.info(
+            f"Processing chunk {idx}/{len(chunked_data)} for category: {category}"
+        )
         # Build context (reads DB, likely ok with separate connection)
         context = build_grouping_context(chunk_dict, category, api_key, db_path=db_path)
         context_prompt = format_context_for_prompt(context)
@@ -235,14 +267,25 @@ def identify_trends_in_category(category, api_key, db_path="db/news.db"):
         co_occurrence_context = _prepare_co_occurrence_context(co_occurrences)
         article_text = _prepare_article_text(df, chunk_dict, db_path)
 
-        prompt = _build_trend_analysis_prompt(category, context_prompt, entity_context, co_occurrence_context, article_text)
+        prompt = _build_trend_analysis_prompt(
+            category,
+            context_prompt,
+            entity_context,
+            co_occurrence_context,
+            article_text,
+        )
         messages = [
-            {"role": "system", "content": f"Analyze recent articles to identify trends in '{category}'. Focus on meaningful patterns in the last 48 hours."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": f"Analyze recent articles to identify trends in '{category}'. Focus on meaningful patterns in the last 48 hours.",
+            },
+            {"role": "user", "content": prompt},
         ]
         response = call_gpt_api(messages, api_key)
         if not response:
-            logger.warning(f"No response from GPT for chunk {idx} in category: {category}")
+            logger.warning(
+                f"No response from GPT for chunk {idx} in category: {category}"
+            )
             continue
 
         cleaned = response.strip().strip("```json").strip("```").strip()
@@ -273,25 +316,36 @@ def save_trends(category, trends_data, db_path="db/news.db"):
         cursor = conn.cursor()
 
         for trend in trends_data["trends"]:
-            try: # Inner try for individual trend saving
+            try:  # Inner try for individual trend saving
                 # Insert trend group
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO trending_groups
                     (category, trend_label, summary, importance_score, confidence_score)
                     VALUES (?, ?, ?, ?, ?)
-                """, (
-                    category, trend.get("trend_label", "Untitled Trend"), trend.get("summary", ""),
-                    trend.get("importance_score", 5.0), trend.get("confidence_score", 0.7)
-                ))
+                """,
+                    (
+                        category,
+                        trend.get("trend_label", "Untitled Trend"),
+                        trend.get("summary", ""),
+                        trend.get("importance_score", 5.0),
+                        trend.get("confidence_score", 0.7),
+                    ),
+                )
                 trend_id = cursor.lastrowid
 
                 # Link articles
                 articles = trend.get("articles", [])
                 for article_id in articles:
                     try:
-                        cursor.execute("INSERT OR IGNORE INTO trending_group_memberships (article_id, trend_id) VALUES (?, ?)", (int(article_id), trend_id))
+                        cursor.execute(
+                            "INSERT OR IGNORE INTO trending_group_memberships (article_id, trend_id) VALUES (?, ?)",
+                            (int(article_id), trend_id),
+                        )
                     except (ValueError, TypeError, sqlite3.Error) as article_err:
-                         logger.warning(f"Skipping invalid article ID {article_id} or DB error for trend {trend_id}: {article_err}")
+                        logger.warning(
+                            f"Skipping invalid article ID {article_id} or DB error for trend {trend_id}: {article_err}"
+                        )
 
                 # Link key entities (PASS CURSOR)
                 key_entities = trend.get("key_entities", [])
@@ -301,35 +355,58 @@ def save_trends(category, trends_data, db_path="db/news.db"):
                     if entity_name:
                         try:
                             # Pass the existing cursor
-                            entity_id = insert_entity(entity_name, entity_type, db_path=db_path, cursor=cursor)
-                            if entity_id is None: # Check if entity insertion failed
-                                logger.error(f"Failed to insert/get entity '{entity_name}' for trend {trend_id}")
+                            entity_id = insert_entity(
+                                entity_name, entity_type, db_path=db_path, cursor=cursor
+                            )
+                            if entity_id is None:  # Check if entity insertion failed
+                                logger.error(
+                                    f"Failed to insert/get entity '{entity_name}' for trend {trend_id}"
+                                )
                                 entity_link_errors += 1
-                                continue # Skip linking if entity_id is None
+                                continue  # Skip linking if entity_id is None
                             # Use a default relevance or calculate if possible
                             relevance = 0.8
-                            link_entity_to_trend(trend_id, entity_id, relevance, db_path=db_path, cursor=cursor)
+                            link_entity_to_trend(
+                                trend_id,
+                                entity_id,
+                                relevance,
+                                db_path=db_path,
+                                cursor=cursor,
+                            )
                         # Catch potential OperationalError specifically if needed, though passing cursor should prevent most locks
                         except sqlite3.OperationalError as lock_err:
-                            logger.error(f"DATABASE LOCKED during entity linking for trend {trend_id}, entity '{entity_name}': {lock_err}")
+                            logger.error(
+                                f"DATABASE LOCKED during entity linking for trend {trend_id}, entity '{entity_name}': {lock_err}"
+                            )
                             entity_link_errors += 1
                         except Exception as exc:
-                            logger.error(f"Error processing entity '{entity_name}' for trend {trend_id}: {exc}", exc_info=False)
+                            logger.error(
+                                f"Error processing entity '{entity_name}' for trend {trend_id}: {exc}",
+                                exc_info=False,
+                            )
                             entity_link_errors += 1
                 saved_count += 1
             except sqlite3.Error as trend_err:
-                 logger.error(f"Database error saving trend '{trend.get('trend_label')}': {trend_err}. Skipping this trend.")
-                 # Decide if rollback is needed here or continue with others
-                 # For now, we log and continue
+                logger.error(
+                    f"Database error saving trend '{trend.get('trend_label')}': {trend_err}. Skipping this trend."
+                )
+                # Decide if rollback is needed here or continue with others
+                # For now, we log and continue
 
-        conn.commit() # Commit all successfully processed trends at the end
-        logger.info(f"Attempted to save {len(trends_data['trends'])} trends for category: {category}. Successfully saved: {saved_count}. Entity link errors: {entity_link_errors}.")
+        conn.commit()  # Commit all successfully processed trends at the end
+        logger.info(
+            f"Attempted to save {len(trends_data['trends'])} trends for category: {category}. Successfully saved: {saved_count}. Entity link errors: {entity_link_errors}."
+        )
 
     except Exception as exc:
-        logger.exception(f"Major error during save_trends for category {category}, rolling back transaction: {exc}")
-        if conn: conn.rollback()
+        logger.exception(
+            f"Major error during save_trends for category {category}, rolling back transaction: {exc}"
+        )
+        if conn:
+            conn.rollback()
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
 
 
 def cleanup_old_trends(db_path="db/news.db"):
@@ -344,24 +421,32 @@ def cleanup_old_trends(db_path="db/news.db"):
         cutoff_time_sql = "datetime('now', '-48 hours')"
 
         # Get IDs to delete first (optional, for logging count)
-        cursor.execute(f"SELECT COUNT(*) FROM trending_groups WHERE created_at < {cutoff_time_sql}")
+        cursor.execute(
+            f"SELECT COUNT(*) FROM trending_groups WHERE created_at < {cutoff_time_sql}"
+        )
         to_delete_count = cursor.fetchone()[0]
         logger.info(f"Found {to_delete_count} trends older than 48 hours to remove.")
 
         if to_delete_count > 0:
             # Rely on ON DELETE CASCADE for memberships and entities
-            cursor.execute(f"DELETE FROM trending_groups WHERE created_at < {cutoff_time_sql}")
+            cursor.execute(
+                f"DELETE FROM trending_groups WHERE created_at < {cutoff_time_sql}"
+            )
             deleted_count = cursor.rowcount
             conn.commit()
-            logger.info(f"Removed {deleted_count} trends (and associated data via CASCADE) older than 48 hours.")
+            logger.info(
+                f"Removed {deleted_count} trends (and associated data via CASCADE) older than 48 hours."
+            )
         else:
-             logger.info("No old trends found to remove.")
+            logger.info("No old trends found to remove.")
 
     except sqlite3.Error as exc:
         logger.error(f"Error cleaning up old trends: {exc}")
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
 
 
 def ensure_minimum_trends(min_count=6, api_key=None, db_path="db/news.db"):
@@ -376,11 +461,15 @@ def ensure_minimum_trends(min_count=6, api_key=None, db_path="db/news.db"):
         current_count = cursor.fetchone()[0]
 
         if current_count >= min_count:
-            logger.info(f"Have {current_count} trends (minimum {min_count} required). No action needed.")
+            logger.info(
+                f"Have {current_count} trends (minimum {min_count} required). No action needed."
+            )
             return
 
         needed_count = min_count - current_count
-        logger.info(f"Need {needed_count} more trends to meet minimum of {min_count}. Checking popular groups...")
+        logger.info(
+            f"Need {needed_count} more trends to meet minimum of {min_count}. Checking popular groups..."
+        )
 
         cutoff_time_utc = datetime.now(pytz.UTC) - timedelta(hours=48)
         cutoff_iso = cutoff_time_utc.strftime("%Y-%m-%d %H:%M:%S")
@@ -397,10 +486,14 @@ def ensure_minimum_trends(min_count=6, api_key=None, db_path="db/news.db"):
             ORDER BY article_count DESC, tg.created_at DESC
             LIMIT ?
         """
-        popular_groups_df = pd.read_sql_query(group_query, conn, params=(cutoff_iso, needed_count * 2)) # Fetch extra
+        popular_groups_df = pd.read_sql_query(
+            group_query, conn, params=(cutoff_iso, needed_count * 2)
+        )  # Fetch extra
 
         if popular_groups_df.empty:
-            logger.info("No suitable recent groups found to generate additional trends.")
+            logger.info(
+                "No suitable recent groups found to generate additional trends."
+            )
             return
 
         groups_to_use = popular_groups_df.head(needed_count)
@@ -409,26 +502,44 @@ def ensure_minimum_trends(min_count=6, api_key=None, db_path="db/news.db"):
         created_count = 0
         for _, group in groups_to_use.iterrows():
             article_query = "SELECT id FROM articles a JOIN two_phase_article_group_memberships tgm ON a.id = tgm.article_id WHERE tgm.group_id = ? ORDER BY a.published_date DESC LIMIT 10"
-            article_ids = [row[0] for row in cursor.execute(article_query, (group['group_id'],)).fetchall()]
-            if not article_ids: continue
+            article_ids = [
+                row[0]
+                for row in cursor.execute(
+                    article_query, (group["group_id"],)
+                ).fetchall()
+            ]
+            if not article_ids:
+                continue
 
             summary = f"Recent developments related to {group['group_label']}"
             trend_data = {
-                "category": group['main_topic'], "trend_label": group['group_label'],
-                "summary": summary, "importance_score": 5.0, "confidence_score": 0.8,
-                "articles": article_ids
+                "category": group["main_topic"],
+                "trend_label": group["group_label"],
+                "summary": summary,
+                "importance_score": 5.0,
+                "confidence_score": 0.8,
+                "articles": article_ids,
             }
 
             # Insert trend group (using cursor)
             cursor.execute(
                 "INSERT INTO trending_groups (category, trend_label, summary, importance_score, confidence_score) VALUES (?, ?, ?, ?, ?)",
-                (trend_data["category"], trend_data["trend_label"], trend_data["summary"], trend_data["importance_score"], trend_data["confidence_score"])
+                (
+                    trend_data["category"],
+                    trend_data["trend_label"],
+                    trend_data["summary"],
+                    trend_data["importance_score"],
+                    trend_data["confidence_score"],
+                ),
             )
             trend_id = cursor.lastrowid
 
             # Link articles (using cursor)
             for article_id in trend_data["articles"]:
-                cursor.execute("INSERT OR IGNORE INTO trending_group_memberships (article_id, trend_id) VALUES (?, ?)", (article_id, trend_id))
+                cursor.execute(
+                    "INSERT OR IGNORE INTO trending_group_memberships (article_id, trend_id) VALUES (?, ?)",
+                    (article_id, trend_id),
+                )
 
             # Link key entities (using cursor) - More complex, requires entity extraction for the group
             try:
@@ -440,22 +551,30 @@ def ensure_minimum_trends(min_count=6, api_key=None, db_path="db/news.db"):
                 """
                 entities = cursor.execute(entity_query, article_ids).fetchall()
                 for entity_row in entities:
-                    link_entity_to_trend(trend_id, entity_row[0], 0.8, db_path=db_path, cursor=cursor)
+                    link_entity_to_trend(
+                        trend_id, entity_row[0], 0.8, db_path=db_path, cursor=cursor
+                    )
             except Exception as entity_err:
-                logger.warning(f"Could not add entity relationships to generated trend {trend_id}: {entity_err}")
+                logger.warning(
+                    f"Could not add entity relationships to generated trend {trend_id}: {entity_err}"
+                )
 
-            logger.info(f"Created additional trend from group: {trend_data['trend_label']} (ID: {trend_id})")
+            logger.info(
+                f"Created additional trend from group: {trend_data['trend_label']} (ID: {trend_id})"
+            )
             created_count += 1
 
         if created_count > 0:
-             conn.commit() # Commit all changes made within this function
+            conn.commit()  # Commit all changes made within this function
         logger.info(f"Created {created_count} additional trends.")
 
     except Exception as e:
         logger.error(f"Error in ensure_minimum_trends: {e}", exc_info=True)
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
 
 
 def get_trending_topics(category=None, limit=10, db_path="db/news.db"):
@@ -466,7 +585,7 @@ def get_trending_topics(category=None, limit=10, db_path="db/news.db"):
     conn = get_connection(db_path)
     article_data_map = {}
     entity_data_map = {}
-    df = pd.DataFrame() # Initialize df
+    df = pd.DataFrame()  # Initialize df
 
     try:
         base_query = """
@@ -491,7 +610,9 @@ def get_trending_topics(category=None, limit=10, db_path="db/news.db"):
         df = pd.read_sql_query(base_query, conn, params=params)
 
         if not df.empty:
-            df["article_ids"] = df["article_ids"].apply(lambda x: [int(aid) for aid in x.split(',')] if x else [])
+            df["article_ids"] = df["article_ids"].apply(
+                lambda x: [int(aid) for aid in x.split(",")] if x else []
+            )
 
             # Fetch articles and entities for each trend
             for _, row in df.iterrows():
@@ -503,7 +624,8 @@ def get_trending_topics(category=None, limit=10, db_path="db/news.db"):
                     art_query = f"SELECT a.id AS article_id, a.title, a.link, a.published_date, a.source FROM articles a WHERE a.id IN ({placeholders}) ORDER BY a.published_date DESC"
                     article_df = pd.read_sql_query(art_query, conn, params=article_ids)
                     article_data_map[trend_id] = article_df.to_dict(orient="records")
-                else: article_data_map[trend_id] = []
+                else:
+                    article_data_map[trend_id] = []
                 # Entities
                 entity_query = "SELECT e.entity_id, e.entity_name, e.entity_type, te.relevance_score FROM entity_profiles e JOIN trend_entities te ON e.entity_id = te.entity_id WHERE te.trend_id = ? ORDER BY te.relevance_score DESC"
                 entity_df = pd.read_sql_query(entity_query, conn, params=(trend_id,))
@@ -514,7 +636,7 @@ def get_trending_topics(category=None, limit=10, db_path="db/news.db"):
 
     except Exception as e:
         logger.error(f"Error fetching trending topics: {e}")
-        df = pd.DataFrame() # Return empty on error
+        df = pd.DataFrame()  # Return empty on error
     finally:
         conn.close()
     return df
@@ -524,18 +646,21 @@ def run_trending_analysis(api_key, categories=None, db_path="db/news.db", min_tr
     """Main function to run the 48-hour trending analysis."""
     logger.info("Starting enhanced trending analysis run.")
     if categories is None:
-        from analysis.two_phase_grouping import PREDEFINED_CATEGORIES # Import if needed
+        from analysis.two_phase_grouping import (
+            PREDEFINED_CATEGORIES,
+        )  # Import if needed
+
         categories = PREDEFINED_CATEGORIES
 
-    setup_trending_tables(db_path=db_path) # Ensure tables exist
-    cleanup_old_trends(db_path=db_path) # Clean first
+    setup_trending_tables(db_path=db_path)  # Ensure tables exist
+    cleanup_old_trends(db_path=db_path)  # Clean first
 
     for category in categories:
         logger.info(f"Processing category for trends: {category}")
         trends = identify_trends_in_category(category, api_key, db_path=db_path)
         if trends:
             save_trends(category, trends, db_path=db_path)
-        time.sleep(1) # Small delay
+        time.sleep(1)  # Small delay
 
     # Ensure minimum trends exist AFTER attempting to generate new ones
     ensure_minimum_trends(min_count=min_trends, api_key=api_key, db_path=db_path)

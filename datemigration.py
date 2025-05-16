@@ -61,6 +61,7 @@ TABLES_WITH_DATE_COLUMNS = {
     # If you have other tables storing timestamps, add them too
 }
 
+
 def convert_to_utc_sqlite_format(date_str):
     """
     Parses a date string via dateutil, converts to UTC,
@@ -74,6 +75,7 @@ def convert_to_utc_sqlite_format(date_str):
     dt_utc = dt.astimezone(timezone.utc)
     # Format as 'YYYY-MM-DD HH:MM:SS' (which SQLite recognizes):
     return dt_utc.strftime("%Y-%m-%d %H:%M:%S")
+
 
 def main():
     db_path = "db/news.db"  # Adjust if needed
@@ -98,16 +100,23 @@ def main():
                     new_date_str = convert_to_utc_sqlite_format(old_date_str)
                     # Update if it actually changed, to reduce churn:
                     if new_date_str != old_date_str:
-                        update_sql = f"UPDATE {table_name} SET {col_name} = ? WHERE rowid = ?"
+                        update_sql = (
+                            f"UPDATE {table_name} SET {col_name} = ? WHERE rowid = ?"
+                        )
                         cur.execute(update_sql, (new_date_str, rowid))
-                        print(f"  {table_name} rowid={rowid}: '{old_date_str}' -> '{new_date_str}'")
+                        print(
+                            f"  {table_name} rowid={rowid}: '{old_date_str}' -> '{new_date_str}'"
+                        )
                 except Exception as parse_err:
-                    print(f"  WARNING: Could not parse '{old_date_str}' in {table_name}.{col_name}: {parse_err}")
+                    print(
+                        f"  WARNING: Could not parse '{old_date_str}' in {table_name}.{col_name}: {parse_err}"
+                    )
 
             conn.commit()  # Commit after each column to keep changes so far
 
     conn.close()
     print("\nDone. Remember to verify with a SELECT or test queries.")
+
 
 if __name__ == "__main__":
     main()

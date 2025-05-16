@@ -14,6 +14,7 @@ from utils import chunk_summaries, MAX_TOKEN_CHUNK
 logger = logging.getLogger(__name__)
 MODEL = "o3-mini"  # or whichever model you prefer
 
+
 def get_articles_missing_company_extraction(db_path="db/news.db"):
     """
     Returns a DataFrame of articles that do NOT have any entry in article_companies.
@@ -54,7 +55,9 @@ def extract_company_names_for_all_articles(api_key, db_path="db/news.db"):
         if content:
             summaries_dict[art_id] = content
 
-    chunked_articles = list(chunk_summaries(summaries_dict, max_token_chunk=MAX_TOKEN_CHUNK))
+    chunked_articles = list(
+        chunk_summaries(summaries_dict, max_token_chunk=MAX_TOKEN_CHUNK)
+    )
     total_extractions = 0
 
     for idx, chunk_dict in enumerate(chunked_articles, start=1):
@@ -66,7 +69,7 @@ def extract_company_names_for_all_articles(api_key, db_path="db/news.db"):
         prompt = (
             "You are a named-entity recognition AI. For each article, extract all company names mentioned. "
             "Return only JSON with the format:\n"
-            "{ \"extractions\": [ {\"article_id\": \"...\", \"companies\": [\"CompanyA\", \"CompanyB\"]}, ... ] }\n\n"
+            '{ "extractions": [ {"article_id": "...", "companies": ["CompanyA", "CompanyB"]}, ... ] }\n\n'
         )
         # Append the article texts
         for art_id, text in chunk_dict.items():
@@ -76,12 +79,9 @@ def extract_company_names_for_all_articles(api_key, db_path="db/news.db"):
         messages = [
             {
                 "role": "system",
-                "content": "Extract company names from the provided article texts."
+                "content": "Extract company names from the provided article texts.",
             },
-            {
-                "role": "user",
-                "content": prompt
-            }
+            {"role": "user", "content": prompt},
         ]
 
         resp = call_gpt_api(messages, api_key, model=MODEL)
@@ -90,7 +90,7 @@ def extract_company_names_for_all_articles(api_key, db_path="db/news.db"):
             continue
 
         cleaned = resp.strip().strip("```")
-        cleaned = re.sub(r'^json\s+', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"^json\s+", "", cleaned, flags=re.IGNORECASE)
         try:
             data = json.loads(cleaned)
             extractions = data.get("extractions", [])
@@ -118,10 +118,13 @@ def extract_company_names_for_all_articles(api_key, db_path="db/news.db"):
                 for comp in companies:
                     comp_name = comp.strip()
                     if comp_name:
-                        c.execute("""
+                        c.execute(
+                            """
                             INSERT OR IGNORE INTO article_companies (article_id, company_name)
                             VALUES (?, ?)
-                        """, (parsed_article_id, comp_name))
+                        """,
+                            (parsed_article_id, comp_name),
+                        )
                         total_extractions += 1
             conn.commit()
         except Exception as e:

@@ -9,6 +9,7 @@ A real-time news aggregation and clustering system that automatically groups rel
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Running the System](#running-the-system)
@@ -44,7 +45,20 @@ The system consists of:
 - OpenAI API key
 - Note with the sources I used, in April this used ~280 million tokens.
 
+
 ![image](https://github.com/user-attachments/assets/0ab15c5e-41b3-424b-9343-78714be08b8b)
+
+## Quick Start
+
+For a fast setup using Docker Compose:
+
+```bash
+git clone https://github.com/PersonalProjectsDsully/NewsGroupingApp.git
+cd NewsGroupingApp
+OPENAI_API_KEY=your_api_key_here docker-compose up --build
+```
+
+The application will be available at `http://localhost:8501`.
 
 ## Installation
 
@@ -53,7 +67,7 @@ The system consists of:
 1. **Clone the repository**
 ```bash
 git clone https://github.com/PersonalProjectsDsully/NewsGroupingApp.git
-cd news_app
+cd NewsGroupingApp
 ```
 
 2. **Set up Python environment**

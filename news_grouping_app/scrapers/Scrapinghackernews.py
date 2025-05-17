@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 import sqlite3
 import requests
+from news_grouping_app.user_agents import RotatingUserAgentSession
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
@@ -74,7 +75,7 @@ class THNScraper:
             sys.exit(1)  # Exit with a non-zero code to indicate failure
 
     def setup_http_session(self) -> requests.Session:
-        session = requests.Session()
+        session = RotatingUserAgentSession()
         retries = Retry(
             total=3,
             backoff_factor=1,
@@ -84,15 +85,6 @@ class THNScraper:
         adapter = HTTPAdapter(max_retries=retries)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
-        session.headers.update(
-            {
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/91.0.4472.124 Safari/537.36"
-                )  # Use a consistent user-agent
-            }
-        )
         return session
 
     def parse_rss_feed(self) -> List[Dict[str, Any]]:

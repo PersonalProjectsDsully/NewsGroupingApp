@@ -1,6 +1,7 @@
 from pathlib import Path
 import sqlite3
 import requests
+from news_grouping_app.user_agents import RotatingUserAgentSession
 from bs4 import BeautifulSoup
 import feedparser
 import time
@@ -23,16 +24,7 @@ class BleepingComputerScraper:
         self.db_name = db_name
         self.feed_url = feed_url
         # Using a session for faster repeated requests
-        self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/91.0.4472.124 Safari/537.36"
-                )
-            }
-        )
+        self.session = RotatingUserAgentSession()
         self.setup_database()
         self.logger = logging.getLogger(__name__)  # Add logger
 

@@ -4,6 +4,8 @@ import logging
 import time
 from datetime import datetime, timedelta
 
+logger = logging.getLogger(__name__)
+
 # --- Core Analysis Modules ---
 from analysis.entity_extraction import extract_entities_for_all_articles
 from analysis.company_extraction import extract_company_names_for_all_articles # Kept for now
@@ -23,8 +25,6 @@ try:
 except ImportError:
     logger.warning("Group merging module ('analysis/group_merging.py') not found. Skipping merge step.")
     GROUP_MERGING_ENABLED = False
-
-logger = logging.getLogger(__name__)
 
 
 def run_entity_extraction_pipeline(api_key=None, db_path="db/news.db"):

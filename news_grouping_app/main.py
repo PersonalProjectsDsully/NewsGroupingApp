@@ -6,6 +6,7 @@ import sys
 import time
 from datetime import datetime
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- Database Setup & Migration ---
 from news_grouping_app.db.database import setup_database
@@ -87,7 +88,7 @@ def run_scrapers_and_analysis():
         logger.exception("CRITICAL ERROR DURING DATABASE SETUP! Aborting run.")
         return  # Stop the run
 
-    # 2. Run Scrapers
+    # 2. Run Scrapers in parallel
     logger.info("--- Starting Scrapers ---")
     scraper_start_time = time.time()
     scrapers = [
@@ -105,7 +106,8 @@ def run_scrapers_and_analysis():
         neowinscraper,
         cyberscoopscraper,
     ]
-    for scraper_module in scrapers:
+
+    def run_scraper(scraper_module):
         try:
             logger.info(f"Running scraper: {scraper_module.__name__}")
             scraper_module.main()
@@ -113,14 +115,21 @@ def run_scrapers_and_analysis():
         except Exception as e:
             logger.exception(f"Error running scraper {scraper_module.__name__}: {e}")
 
-    # Handle RegisterScraper separately
-    try:
-        logger.info("Running scraper: RegisterScraper")
-        register_scraper = RegisterScraper()
-        register_scraper.process_register_articles(limit=100)
-        logger.info("Scraper RegisterScraper completed.")
-    except Exception as e:
-        logger.exception(f"Error running RegisterScraper: {e}")
+    def run_register_scraper():
+        try:
+            logger.info("Running scraper: RegisterScraper")
+            register_scraper = RegisterScraper()
+            register_scraper.process_register_articles(limit=100)
+            logger.info("Scraper RegisterScraper completed.")
+        except Exception as e:
+            logger.exception(f"Error running RegisterScraper: {e}")
+
+    max_workers = min(5, len(scrapers) + 1)  # Limit concurrency
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(run_scraper, s) for s in scrapers]
+        futures.append(executor.submit(run_register_scraper))
+        for future in as_completed(futures):
+            pass  # results logged within tasks
 
     scraper_elapsed = time.time() - scraper_start_time
     logger.info(f"--- Scrapers Finished in {scraper_elapsed:.2f} seconds ---")

@@ -9,8 +9,12 @@ import logging  # Import logging
 logger = logging.getLogger(__name__)  # Add logger for potential errors
 
 
+# Determine the project root so the database path is consistent across modules
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_DB_PATH = BASE_DIR / "news.db"
+# Place the database under the project "db" folder at the repository root.
+# Many modules reference "db/news.db" directly, so compute the same path here
+# to avoid mismatches when running inside a container or locally.
+DEFAULT_DB_PATH = BASE_DIR.parent.parent / "db" / "news.db"
 
 
 def get_connection(db_path=DEFAULT_DB_PATH):
@@ -30,6 +34,9 @@ def setup_database(db_path=DEFAULT_DB_PATH):
     Includes ON DELETE CASCADE for relevant foreign keys.
     """
     conn = None  # Initialize conn
+    # Ensure the database directory exists to avoid "unable to open database file" errors
+    db_path = Path(db_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         conn = get_connection(db_path)
         cursor = conn.cursor()

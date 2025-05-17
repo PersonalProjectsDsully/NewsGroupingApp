@@ -6,13 +6,14 @@ import feedparser
 from bs4 import BeautifulSoup
 import logging
 from typing import Optional, Dict, Any, List
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 import time
 import sys
 import re
 
 
 class SecurelistProcessor:
-    def __init__(self, db_name: str = str(Path(__file__).resolve().parents[1] / "db" / "news.db")):
+    def __init__(self, db_name: str = str(DEFAULT_DB_PATH)):
         self.db_name = db_name
         self.feed_url = "https://securelist.com/feed/"
         self.logger = self.setup_logging()

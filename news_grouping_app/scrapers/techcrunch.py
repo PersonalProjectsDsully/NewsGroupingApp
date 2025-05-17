@@ -7,13 +7,14 @@ import feedparser
 import time
 import sys
 from typing import Optional, Dict, Any, List
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 import logging
 
 
 class TechCrunchNewsScraper:
     def __init__(
         self,
-        db_name: str = str(Path(__file__).resolve().parents[1] / "db" / "news.db"),
+        db_name: str = str(DEFAULT_DB_PATH),
         feed_url: str = "https://techcrunch.com/feed/",
     ):
         self.db_name = db_name

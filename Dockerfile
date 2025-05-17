@@ -47,5 +47,5 @@ ENV OPENAI_API_KEY=""
 # Expose Flask port (8501)
 EXPOSE 8501
 
-# Use the entrypoint script
-CMD ["/app/entrypoint.sh"]
+# Use the entrypoint script directly with sh
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

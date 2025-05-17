@@ -8,10 +8,11 @@ import time
 import sys
 from typing import Optional, Dict, Any, List
 import logging  # Import logging
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 
 
 class TechRadarScraper:
-    def __init__(self, db_name: str = str(Path(__file__).resolve().parents[1] / "db" / "news.db"), feed_urls: List[str] = None):
+    def __init__(self, db_name: str = str(DEFAULT_DB_PATH), feed_urls: List[str] = None):
         if feed_urls is None:
             self.feed_urls = [
                 "https://www.techradar.com/feeds/tag/software",

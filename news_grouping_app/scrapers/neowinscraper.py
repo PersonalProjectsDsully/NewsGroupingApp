@@ -10,12 +10,13 @@ import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 from typing import Optional, List, Dict, Any
 import logging
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 
 
 class NeowinScraper:
     def __init__(self, db_name: str = None, site_config: Dict[str, Any] = None):
         if db_name is None:
-            db_name = Path(__file__).resolve().parents[1] / "db" / "news.db"
+            db_name = DEFAULT_DB_PATH
         self.db_name = db_name
         self.site_config = site_config or {}
         self.session = RotatingUserAgentSession()

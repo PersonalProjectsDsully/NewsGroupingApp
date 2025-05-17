@@ -8,12 +8,13 @@ import time
 import sys
 from typing import Optional, Dict, Any, List
 import logging
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 
 
 class RegisterScraper:
     def __init__(
         self,
-        db_name: str = str(Path(__file__).resolve().parents[1] / "db" / "news.db"),
+        db_name: str = str(DEFAULT_DB_PATH),
         feed_url: str = "https://www.theregister.com/headlines.atom",
     ):
         self.db_name = db_name

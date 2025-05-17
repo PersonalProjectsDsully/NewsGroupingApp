@@ -4,13 +4,14 @@ import requests
 from news_grouping_app.user_agents import RotatingUserAgentSession
 from bs4 import BeautifulSoup
 from typing import Optional, Dict, Any, List
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 import time
 import xml.etree.ElementTree as ET
 import logging
 
 
 class CybersecurityScraper:
-    def __init__(self, db_name: str = str(Path(__file__).resolve().parents[1] / "db" / "news.db"), site_config: Dict[str, Any] = None):
+    def __init__(self, db_name: str = str(DEFAULT_DB_PATH), site_config: Dict[str, Any] = None):
         self.db_name = db_name
         self.site_config = site_config or {}
         self.session = RotatingUserAgentSession()

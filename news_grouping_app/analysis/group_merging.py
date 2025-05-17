@@ -24,7 +24,8 @@ except ImportError as e:
     calculate_article_to_group_similarity = None
 
 logger = logging.getLogger(__name__)
-MERGE_LLM_MODEL = "o3-mini"  # Model for generating merged labels/desc
+from news_grouping_app.config import OPENAI_MODEL
+MERGE_LLM_MODEL = OPENAI_MODEL  # Model for generating merged labels/desc
 
 
 def _calculate_group_similarity(

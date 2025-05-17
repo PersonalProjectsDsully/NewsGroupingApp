@@ -10,9 +10,10 @@ import logging
 from news_grouping_app.db.database import get_connection, insert_entity, link_entity_to_article
 from news_grouping_app.llm_calls import call_gpt_api
 from news_grouping_app.utils import chunk_summaries, MAX_TOKEN_CHUNK
+from news_grouping_app.config import OPENAI_MODEL
 
 logger = logging.getLogger(__name__)
-MODEL = "o3-mini"  # or whichever model you prefer
+MODEL = OPENAI_MODEL  # default model can be overridden via env var
 
 # Increase the token chunk size for faster processing
 EXTRACTION_TOKEN_CHUNK = MAX_TOKEN_CHUNK * 1.5  # 50% larger chunks for extraction

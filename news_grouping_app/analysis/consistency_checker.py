@@ -12,9 +12,10 @@ from news_grouping_app.llm_calls import call_gpt_api
 from news_grouping_app.utils import chunk_summaries, MAX_TOKEN_CHUNK
 from news_grouping_app.analysis.context_builder import build_grouping_context, format_context_for_prompt
 from news_grouping_app.analysis.entity_extraction import get_entities_for_article
+from news_grouping_app.config import OPENAI_MODEL
 
 logger = logging.getLogger(__name__)
-MODEL = "o3-mini"  # or whichever model you prefer
+MODEL = OPENAI_MODEL  # default model can be overridden via env var
 
 
 def get_recent_groups_for_category(category, days=30, db_path="db/news.db"):

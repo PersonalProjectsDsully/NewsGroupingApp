@@ -5,7 +5,9 @@ import time
 import logging
 from openai import OpenAI
 
-MODEL = "o3-mini"
+from news_grouping_app.config import OPENAI_MODEL
+
+MODEL = OPENAI_MODEL
 MAX_RETRIES = 3
 REQUEST_TIMEOUT = 600
 

@@ -33,11 +33,12 @@ def get_connection():
     return sqlite3.connect(str(DB_PATH), check_same_thread=False)
 
 
-# Use frontend_build as the static folder
+# Use frontend_build directory at the project root as the static folder
+STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend_build"
 app = Flask(
     __name__,
-    static_folder="frontend_build",
-    # static_url_path="" # Keep default static path relative to static_folder
+    static_folder=str(STATIC_DIR),
+    # static_url_path=""  # Keep default static path relative to static_folder
 )
 
 # --- Logging Setup ---

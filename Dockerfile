@@ -7,16 +7,8 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY frontend/package*.json ./
-RUN npm install > /app/build_log.txt 2>&1
-
-# Install Tailwind CSS and its peer dependencies
-RUN npm install -D tailwindcss postcss autoprefixer >> /app/build_log.txt 2>&1
-RUN npm install @radix-ui/react-icons lucide-react >> /app/build_log.txt 2>&1
-RUN npm install @radix-ui/react-select >> /app/build_log.txt 2>&1
-RUN npm install @radix-ui/react-slot >> /app/build_log.txt 2>&1
-RUN npm install class-variance-authority >> /app/build_log.txt 2>&1
-RUN npm install clsx >> /app/build_log.txt 2>&1
-RUN npm install tailwind-merge >> /app/build_log.txt 2>&1
+# Install all dependencies defined in package.json and package-lock.json
+RUN npm ci > /app/build_log.txt 2>&1
 
 # Copy the entire frontend source code
 COPY frontend/ ./

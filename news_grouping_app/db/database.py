@@ -9,12 +9,14 @@ import logging  # Import logging
 logger = logging.getLogger(__name__)  # Add logger for potential errors
 
 
-# Determine the project root so the database path is consistent across modules
-BASE_DIR = Path(__file__).resolve().parent
+# Determine the project root so the database path is consistent across modules.
+# Using `parents[2]` gets the repository root when this file lives at
+# `news_grouping_app/db/database.py`.
+BASE_DIR = Path(__file__).resolve().parents[2]
 # Place the database under the project "db" folder at the repository root.
 # Many modules reference "db/news.db" directly, so compute the same path here
 # to avoid mismatches when running inside a container or locally.
-DEFAULT_DB_PATH = BASE_DIR.parent.parent / "db" / "news.db"
+DEFAULT_DB_PATH = BASE_DIR / "db" / "news.db"
 
 
 def get_connection(db_path=DEFAULT_DB_PATH):

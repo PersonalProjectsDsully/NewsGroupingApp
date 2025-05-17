@@ -184,9 +184,11 @@ def main():
         logger.exception("Error during initial run.")
 
     # Schedule regular runs
-    interval_minutes = 15  # Run every 15 minutes
+    interval_minutes = int(os.environ.get("SCHEDULE_INTERVAL_MINUTES", "15"))
     interval_seconds = interval_minutes * 60
-    logger.info(f"Setting up scheduler to run every {interval_minutes} minutes.")
+    logger.info(
+        f"Setting up scheduler to run every {interval_minutes} minutes."
+    )
 
     while True:
         try:

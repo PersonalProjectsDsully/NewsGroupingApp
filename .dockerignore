@@ -1,0 +1,6 @@
+frontend/node_modules
+build_log.txt
+build_log_local.txt
+.git
+__pycache__/
+*.py[cod]

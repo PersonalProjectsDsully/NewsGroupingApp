@@ -98,12 +98,12 @@ Default timezone is US Eastern Time. This can be configured in the application c
 
 1. **Start the backend scraper and analysis pipeline**
 ```bash
-python main.py
+python -m news_grouping_app.main
 ```
 
 2. **Start the Flask API server**
 ```bash
-python app.py
+python -m news_grouping_app.app
 ```
 
 The web interface will be available at `http://localhost:8501`
@@ -285,8 +285,8 @@ The system performs three main analysis phases:
 Monitor application logs for detailed error information:
 ```bash
 # For local development
-python main.py  # Check console output
-python app.py   # Check Flask server logs
+python -m news_grouping_app.main  # Check console output
+python -m news_grouping_app.app   # Check Flask server logs
 
 # For Docker
 docker-compose logs -f

@@ -17,18 +17,18 @@ echo "Database directory created/verified"
 
 # Step 1: Create database schema
 echo "Setting up database schema..."
-python -c "from db.database import setup_database; setup_database()"
+python -c "from news_grouping_app.db.database import setup_database; setup_database()"
 echo "Database schema setup complete"
 
 # Step 2: Start scrapers in the background
 echo "Starting scrapers in the background..."
-python main.py &
+python -m news_grouping_app.main &
 SCRAPER_PID=$!
 echo "Scrapers started with PID: $SCRAPER_PID"
 
 # Step 3: Start Flask app in the foreground
 echo "Starting Flask app in the foreground..."
-python app.py
+python -m news_grouping_app.app
 
 # If Flask app exits, kill the scraper process
 kill $SCRAPER_PID

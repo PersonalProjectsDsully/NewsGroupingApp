@@ -308,6 +308,11 @@ The system performs three main analysis phases:
    - Check for proper Node.js version (18+)
    - Frontend build output should be in `frontend_build/` directory
 
+5. **Entrypoint Script Errors on Windows**
+   - If `/app/entrypoint.sh` reports `not found` or a `then` syntax error
+   - Convert the file to Unix line endings using `dos2unix entrypoint.sh`
+   - Alternatively, set `git config core.autocrlf input` before cloning
+
 ### Logs
 Monitor application logs for detailed error information:
 ```bash

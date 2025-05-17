@@ -1,6 +1,7 @@
 from pathlib import Path
 import sqlite3
 import requests
+from news_grouping_app.user_agents import RotatingUserAgentSession
 from bs4 import BeautifulSoup
 from typing import Optional, Dict, Any, List
 import time
@@ -12,16 +13,7 @@ class CybersecurityScraper:
     def __init__(self, db_name: str = str(Path(__file__).resolve().parents[1] / "db" / "news.db"), site_config: Dict[str, Any] = None):
         self.db_name = db_name
         self.site_config = site_config or {}
-        self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/91.0.4472.124 Safari/537.36"
-                )
-            }
-        )
+        self.session = RotatingUserAgentSession()
         self.setup_database()
         self.logger = logging.getLogger(__name__)  # add logger
 

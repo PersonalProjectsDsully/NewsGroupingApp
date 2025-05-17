@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+news_grouping_app/db/news.db
+.env
+venv/

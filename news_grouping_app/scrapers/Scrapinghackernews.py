@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 import re
 from email.utils import parsedate_to_datetime
 from typing import Optional, Dict, Any, List
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 
 
 class THNScraper:
@@ -264,7 +265,7 @@ class THNScraper:
 def main():
     parser = argparse.ArgumentParser(description="The Hacker News Scraper")
     parser.add_argument(
-        "--db", type=str, default=str(Path(__file__).resolve().parents[1] / "db" / "news.db"), help="SQLite database file name"
+        "--db", type=str, default=str(DEFAULT_DB_PATH), help="SQLite database file name"
     )
     parser.add_argument(
         "--feed_url", type=str, default="https://feeds.feedburner.com/TheHackersNews"

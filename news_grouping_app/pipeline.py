@@ -2,6 +2,7 @@ import os
 import logging
 import time
 from datetime import datetime, timedelta
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 
 # --- Core Analysis Modules ---
 from news_grouping_app.analysis.entity_extraction import extract_entities_for_all_articles
@@ -37,7 +38,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def run_entity_extraction_pipeline(api_key=None, db_path="db/news.db"):
+def run_entity_extraction_pipeline(api_key=None, db_path=str(DEFAULT_DB_PATH)):
     """
     Run the entity, company, and CVE extraction pipeline.
     These need to run BEFORE similarity-based grouping.
@@ -91,7 +92,7 @@ def run_entity_extraction_pipeline(api_key=None, db_path="db/news.db"):
 # <<< MODIFIED Function Signature and Call >>>
 def run_article_grouping_pipeline(
     api_key=None,
-    db_path="db/news.db",
+    db_path=str(DEFAULT_DB_PATH),
     threshold_rules=DYNAMIC_THRESHOLD_RULES,  # <<< Use rules dict, import default
 ):
     """
@@ -134,7 +135,7 @@ def run_article_grouping_pipeline(
 # <<< END MODIFIED Function >>>
 
 
-def run_trending_analysis_pipeline(api_key=None, db_path="db/news.db"):
+def run_trending_analysis_pipeline(api_key=None, db_path=str(DEFAULT_DB_PATH)):
     """
     Run the 48-hour trending analysis pipeline.
     """
@@ -178,7 +179,7 @@ def run_trending_analysis_pipeline(api_key=None, db_path="db/news.db"):
     return logs
 
 
-def run_full_pipeline_headless(api_key=None, db_path="db/news.db"):
+def run_full_pipeline_headless(api_key=None, db_path=str(DEFAULT_DB_PATH)):
     """
     Run the full analysis pipeline (Extraction -> Grouping -> Trending) in headless mode.
     Returns logs.
@@ -257,7 +258,7 @@ def run_full_pipeline_headless(api_key=None, db_path="db/news.db"):
     return all_logs
 
 
-def schedule_regular_cleanup(db_path="db/news.db"):
+def schedule_regular_cleanup(db_path=str(DEFAULT_DB_PATH)):
     """
     Schedule regular cleanup of trending data.
     Placeholder - integrate with your scheduler (APScheduler, cron, etc.).

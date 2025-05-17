@@ -8,12 +8,13 @@ import time
 import sys
 import logging  # Import the logging module
 from typing import Optional, Dict, Any, List
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 
 
 class BleepingComputerScraper:
     def __init__(
         self,
-        db_name: str = str(Path(__file__).resolve().parents[1] / "db" / "news.db"),
+        db_name: str = str(DEFAULT_DB_PATH),
         feed_url: str = "https://www.bleepingcomputer.com/feed/",
     ):
         """
@@ -170,7 +171,7 @@ class BleepingComputerScraper:
 
 def main():
     scraper = BleepingComputerScraper(
-        db_name=str(Path(__file__).resolve().parents[1] / "db" / "news.db"), feed_url="https://www.bleepingcomputer.com/feed/"
+        db_name=str(DEFAULT_DB_PATH), feed_url="https://www.bleepingcomputer.com/feed/"
     )
     scraper.process_articles(limit=100)
 

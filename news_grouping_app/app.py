@@ -438,7 +438,8 @@ def test_grouping_prompt():
             return jsonify({"error": "No data provided"}), 400
         article_ids = data.get("articles", [])
         prompt_template = data.get("prompt_template", "")
-        model = data.get("model", "o3-mini")
+        from news_grouping_app.config import OPENAI_MODEL
+        model = data.get("model", OPENAI_MODEL)
 
         if not article_ids or not prompt_template:
             return jsonify({"error": "Missing 'articles' or 'prompt_template'"}), 400

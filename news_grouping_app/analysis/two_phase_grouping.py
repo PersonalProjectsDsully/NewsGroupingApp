@@ -56,7 +56,8 @@ PREDEFINED_CATEGORIES = [
 ENABLE_LLM_MATCH_ASSESSMENT = (
     True  # Set to False to disable LLM checks for ambiguous cases
 )
-LLM_CHECK_MODEL = "o3-mini"
+from news_grouping_app.config import OPENAI_MODEL
+LLM_CHECK_MODEL = OPENAI_MODEL
 AMBIGUITY_ZONE_BELOW_THRESHOLD = 0.10  # How far below threshold triggers check
 AMBIGUITY_ZONE_ABOVE_THRESHOLD = 0.05  # How far above threshold triggers check
 MAX_SCORE_GAP_FOR_AMBIGUITY = 0.08  # If second best is this close, trigger check

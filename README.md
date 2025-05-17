@@ -103,6 +103,12 @@ The system uses different OpenAI models for various tasks. Configure them in you
 - Entity extraction: `gpt-4o`
 - Trending analysis: `o3-mini`
 
+You can override the default model used across the application by setting the
+`OPENAI_MODEL` environment variable. For example:
+```bash
+export OPENAI_MODEL="gpt-4.1-mini"
+```
+
 ### Time Zone
 Default timezone is US Eastern Time. This can be configured in the application code.
 

@@ -23,9 +23,10 @@ from news_grouping_app.utils import chunk_summaries, MAX_TOKEN_CHUNK
 # Import entity/context functions (these primarily read, should be okay)
 from news_grouping_app.analysis.entity_extraction import get_entities_for_article, get_trending_entities
 from news_grouping_app.analysis.context_builder import build_grouping_context, format_context_for_prompt
+from news_grouping_app.config import OPENAI_MODEL
 
 logger = logging.getLogger(__name__)
-MODEL = "o3-mini"  # or whichever model you prefer
+MODEL = OPENAI_MODEL  # default model can be overridden via env var
 
 
 def setup_trending_tables(db_path="db/news.db"):

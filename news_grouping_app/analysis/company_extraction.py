@@ -10,9 +10,10 @@ import logging
 from news_grouping_app.db.database import get_connection
 from news_grouping_app.llm_calls import call_gpt_api
 from news_grouping_app.utils import chunk_summaries, MAX_TOKEN_CHUNK
+from news_grouping_app.config import OPENAI_MODEL
 
 logger = logging.getLogger(__name__)
-MODEL = "o3-mini"  # or whichever model you prefer
+MODEL = OPENAI_MODEL  # default model can be overridden via env var
 
 
 def get_articles_missing_company_extraction(db_path="db/news.db"):

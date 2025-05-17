@@ -3,3 +3,4 @@ __pycache__/
 news_grouping_app/db/news.db
 .env
 venv/
+db/news.db

@@ -7,7 +7,7 @@ services:
     volumes:
       - ./db:/app/db
     environment:
-      - OPENAI_API_KEY=  # Pass from host environment variable
+      - OPENAI_API_KEY
     restart: unless-stopped
 
 # To run with your API key, use:

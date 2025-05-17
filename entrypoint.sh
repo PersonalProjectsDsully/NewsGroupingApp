@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Complete entrypoint.sh for news application
 
 echo "Starting application..."

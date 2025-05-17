@@ -9,7 +9,7 @@ import sqlite3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- Database Setup & Migration ---
-from news_grouping_app.db.database import setup_database
+from news_grouping_app.db.database import setup_database, DEFAULT_DB_PATH
 from news_grouping_app.datemigration import main as run_date_migration  # Keep date migration
 
 # --- Scrapers ---
@@ -43,10 +43,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def verify_table_exists(db_path="db/news.db", table_name="two_phase_article_groups"):
+def verify_table_exists(db_path=DEFAULT_DB_PATH, table_name="two_phase_article_groups"):
     """Helper function to check if a table exists."""
     try:
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
         cursor.execute(
             f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'"

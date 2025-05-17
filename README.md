@@ -112,6 +112,13 @@ export OPENAI_MODEL="gpt-4.1-mini"
 ### Time Zone
 Default timezone is US Eastern Time. This can be configured in the application code.
 
+### Scheduling
+Control how often the pipeline runs by setting the `SCHEDULE_INTERVAL_MINUTES`
+environment variable. It defaults to `15` minutes if not specified:
+```bash
+export SCHEDULE_INTERVAL_MINUTES=30
+```
+
 ## Running the System
 
 ### Local Development

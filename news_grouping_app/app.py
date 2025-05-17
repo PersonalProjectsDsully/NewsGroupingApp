@@ -23,10 +23,12 @@ from news_grouping_app.analysis.entity_extraction import get_trending_entities, 
 from news_grouping_app.pipeline import schedule_regular_cleanup
 from news_grouping_app.llm_calls import call_gpt_api
 from pathlib import Path
+from news_grouping_app.db.database import DEFAULT_DB_PATH
 
 # --- Database ---
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "db" / "news.db"
+# Use the same database location defined in database.py to avoid mismatched paths
+DB_PATH = DEFAULT_DB_PATH
 
 
 def get_connection():

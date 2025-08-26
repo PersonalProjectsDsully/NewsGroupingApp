@@ -237,11 +237,19 @@ The system performs three main analysis phases:
 - `articles` - Scraped articles with metadata
 - `two_phase_article_groups` - Article group definitions
 - `two_phase_article_group_memberships` - Article-to-group mappings
-- `entity_profiles` - Extracted entities
+- `entity_profiles` - Extracted entities with external IDs (`wiki_qid`) and JSON `aliases`
 - `article_entities` - Article-to-entity relationships
 - `trending_groups` - Trending topic definitions
 - `article_cves` - CVE mentions in articles
 - `cve_info` - Detailed CVE information
+
+If upgrading an existing database, run:
+
+```bash
+python -m news_grouping_app.wiki_qid_migration
+```
+
+to add these new fields and the unique index on `wiki_qid`.
 
 ## AI Models & Assistants
 

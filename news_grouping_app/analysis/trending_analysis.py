@@ -353,11 +353,18 @@ def save_trends(category, trends_data, db_path="db/news.db"):
                 for entity_data in key_entities:
                     entity_name = entity_data.get("name", "").strip()
                     entity_type = entity_data.get("type", "unknown").lower()
+                    wiki_qid = entity_data.get("qid") or entity_data.get("wiki_qid")
+                    aliases = entity_data.get("aliases", [])
                     if entity_name:
                         try:
                             # Pass the existing cursor
                             entity_id = insert_entity(
-                                entity_name, entity_type, db_path=db_path, cursor=cursor
+                                entity_name,
+                                entity_type,
+                                wiki_qid=wiki_qid,
+                                aliases=aliases,
+                                db_path=db_path,
+                                cursor=cursor,
                             )
                             if entity_id is None:  # Check if entity insertion failed
                                 logger.error(

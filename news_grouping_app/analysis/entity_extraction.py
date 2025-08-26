@@ -156,12 +156,16 @@ def extract_entities_for_all_articles(api_key, db_path="db/news.db"):
                     description = entity.get("description", "")
                     relevance = float(entity.get("relevance", 1.0))
                     context = entity.get("context", "")
+                    wiki_qid = entity.get("qid") or entity.get("wiki_qid")
+                    aliases = entity.get("aliases", [])
 
                     # Insert or update the entity profile
                     entity_id = insert_entity(
                         entity_name=entity_name,
                         entity_type=entity_type,
                         description=description,
+                        wiki_qid=wiki_qid,
+                        aliases=aliases,
                         db_path=db_path,
                     )
 

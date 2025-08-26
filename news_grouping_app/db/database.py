@@ -4,6 +4,7 @@ import sqlite3
 import time
 from datetime import datetime
 from pathlib import Path
+import json
 import logging  # Import logging
 
 logger = logging.getLogger(__name__)  # Add logger for potential errors
@@ -207,6 +208,8 @@ def setup_database(db_path=DEFAULT_DB_PATH):
             entity_name TEXT NOT NULL,
             entity_type TEXT NOT NULL,
             description TEXT,
+            wiki_qid TEXT UNIQUE,
+            aliases TEXT,
             first_seen TIMESTAMP,
             last_seen TIMESTAMP,
             mention_count INTEGER DEFAULT 1,
@@ -446,9 +449,15 @@ def _execute_write(sql, params, db_path, cursor=None):
 
 
 def insert_entity(
-    entity_name, entity_type, description=None, db_path=DEFAULT_DB_PATH, cursor=None
+    entity_name,
+    entity_type,
+    description=None,
+    wiki_qid=None,
+    aliases=None,
+    db_path=DEFAULT_DB_PATH,
+    cursor=None,
 ):
-    """Insert or update an entity. Uses provided cursor if available. Returns entity_id."""
+    """Insert or update an entity with optional external ID and aliases."""
     conn_managed_here = False
     conn = None
     if cursor is None:
@@ -456,38 +465,79 @@ def insert_entity(
         cursor = conn.cursor()
         conn_managed_here = True
 
+    aliases = aliases or []
     entity_id = None
     try:
-        # Check if entity exists
-        cursor.execute(
-            "SELECT entity_id FROM entity_profiles WHERE entity_name = ? AND entity_type = ?",
-            (entity_name, entity_type),
-        )
-        entity = cursor.fetchone()
+        entity = None
+        # Check by QID first if provided
+        if wiki_qid:
+            cursor.execute(
+                "SELECT entity_id, aliases, entity_name FROM entity_profiles WHERE wiki_qid = ?",
+                (wiki_qid,),
+            )
+            entity = cursor.fetchone()
+
+        if not entity:
+            # Check by exact name/type match
+            cursor.execute(
+                "SELECT entity_id, aliases, entity_name, wiki_qid FROM entity_profiles WHERE entity_name = ? AND entity_type = ?",
+                (entity_name, entity_type),
+            )
+            entity = cursor.fetchone()
+
+        if not entity:
+            # Check by alias
+            cursor.execute(
+                "SELECT entity_id, aliases, entity_name FROM entity_profiles WHERE entity_type = ? AND aliases IS NOT NULL",
+                (entity_type,),
+            )
+            rows = cursor.fetchall()
+            for row in rows:
+                alias_list = json.loads(row[1]) if row[1] else []
+                if entity_name in alias_list:
+                    entity = row
+                    break
 
         if entity:
             entity_id = entity[0]
-            # Update existing - Use CURRENT_TIMESTAMP for SQLite internal handling
+            existing_aliases = json.loads(entity[1]) if entity[1] else []
+            canonical_name = entity[2]
+            alias_set = set(existing_aliases)
+            if entity_name != canonical_name:
+                alias_set.add(entity_name)
+            for alias in aliases:
+                if alias != canonical_name:
+                    alias_set.add(alias)
             cursor.execute(
                 """
                 UPDATE entity_profiles
                 SET mention_count = mention_count + 1,
                     last_seen = CURRENT_TIMESTAMP,
                     updated_at = CURRENT_TIMESTAMP,
-                    description = COALESCE(?, description)
+                    description = COALESCE(?, description),
+                    wiki_qid = COALESCE(?, wiki_qid),
+                    aliases = ?
                 WHERE entity_id = ?
-            """,
-                (description, entity_id),
+                """,
+                (description, wiki_qid, json.dumps(list(alias_set)), entity_id),
             )
         else:
-            # Insert new - Use CURRENT_TIMESTAMP
+            alias_set = set(aliases)
+            if entity_name not in alias_set:
+                alias_set.add(entity_name)
             cursor.execute(
                 """
                 INSERT INTO entity_profiles
-                (entity_name, entity_type, description, first_seen, last_seen, mention_count)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1)
-            """,
-                (entity_name, entity_type, description),
+                (entity_name, entity_type, description, wiki_qid, aliases, first_seen, last_seen, mention_count)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1)
+                """,
+                (
+                    entity_name,
+                    entity_type,
+                    description,
+                    wiki_qid,
+                    json.dumps(list(alias_set)),
+                ),
             )
             entity_id = cursor.lastrowid
 
@@ -498,10 +548,10 @@ def insert_entity(
     except sqlite3.Error as e:
         logger.error(
             f"Error in insert_entity for '{entity_name}': {e}", exc_info=False
-        )  # Less verbose logging maybe
+        )
         if conn_managed_here and conn:
             conn.rollback()
-        return None  # Return None on failure instead of raising? Depends on caller needs. Let's return None.
+        return None
     finally:
         if conn_managed_here and conn:
             conn.close()

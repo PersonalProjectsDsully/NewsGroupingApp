@@ -11,6 +11,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # --- Database Setup & Migration ---
 from news_grouping_app.db.database import setup_database, DEFAULT_DB_PATH
 from news_grouping_app.datemigration import main as run_date_migration  # Keep date migration
+from news_grouping_app.wiki_qid_migration import (
+    main as run_wiki_qid_migration,
+)
 
 # --- Scrapers ---
 from news_grouping_app.scrapers import bleepingcomputer
@@ -141,6 +144,13 @@ def run_scrapers_and_analysis():
         logger.info("Date migration completed.")
     except Exception as e:
         logger.exception(f"Error during date migration: {e}")
+
+    logger.info("Ensuring wiki_qid field exists...")
+    try:
+        run_wiki_qid_migration()
+        logger.info("wiki_qid migration completed.")
+    except Exception as e:
+        logger.exception(f"Error during wiki_qid migration: {e}")
 
     # 4. Run Analysis Pipeline
     logger.info("--- Starting Analysis Pipeline ---")
